@@ -7,7 +7,9 @@ import (
 	"testing"
 )
 
-// testStruct is used for testing struct{v: string}
+// positive tests
+
+// testStringStruct is used for testing struct{v: string}
 type testStringStruct struct {
 	v string
 }
@@ -95,7 +97,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestSingleton_Get(t *testing.T) {
+func TestGet(t *testing.T) {
 	type testCase[T any] struct {
 		name string
 		s    *Singleton[T]
@@ -180,7 +182,7 @@ func TestSingleton_Get(t *testing.T) {
 	}
 }
 
-func TestSingleton_ThreadSafety(t *testing.T) {
+func TestThreadSafety(t *testing.T) {
 	var counter int32 = 0
 	s := New(func() *int {
 		atomic.AddInt32(&counter, 1)
@@ -214,5 +216,66 @@ func TestSingleton_ThreadSafety(t *testing.T) {
 				t.Errorf("Get() returned different values across goroutines")
 			}
 		}()
+	}
+}
+
+// negative tests
+
+func TestGetWithNilFuncPanics(t *testing.T) {
+	s := New[int](nil)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic when calling Get on Singleton created with nil func, got none")
+		}
+	}()
+
+	// This should panic because the factory is nil
+	_ = s.Get()
+}
+
+func TestGetWhenFactoryReturnsNil(t *testing.T) {
+	var called int32
+	s := New(func() *int {
+		atomic.AddInt32(&called, 1)
+		return nil
+	},
+	)
+
+	if got := s.Get(); got != nil {
+		t.Fatalf("expected nil value from Get, got %v", got)
+	}
+
+	// A second Get must not call the factory again.
+	if got := s.Get(); got != nil {
+		t.Fatalf("second Get returned non-nil: %v", got)
+	}
+
+	if called != 1 {
+		t.Fatalf("factory called %d times, want 1", called)
+	}
+}
+
+func TestFactoryPanics(t *testing.T) {
+	var called int32
+	s := New(func() *int {
+		atomic.AddInt32(&called, 1)
+		panic("boom")
+	},
+	)
+
+	for i := 0; i < 2; i++ { // call twice, each must panic
+		func() {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Fatalf("call %d: expected panic, got none", i+1)
+				}
+			}()
+			_ = s.Get()
+		}()
+	}
+
+	if called != 2 {
+		t.Fatalf("factory called %d times, want 2 (once per panic)", called)
 	}
 }

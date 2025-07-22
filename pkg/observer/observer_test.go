@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// positive tests
+
 /*
 A helper Observer implementation that stores every state it receives.
 The internal slice is guarded by a mutex so we can safely use it from

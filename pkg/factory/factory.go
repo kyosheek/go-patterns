@@ -4,17 +4,17 @@ import (
 	"kyoshee/patterns/pkg/singleton"
 )
 
-type GenericFactory[T any] interface {
+type Factory[T any] interface {
 	Create() T
 	GetShared() *T
 }
 
-type Factory[T any] struct {
+type ConcreteFactory[T any] struct {
 	shared *singleton.Singleton[T]
 }
 
-func New[T any]() GenericFactory[T] {
-	return &Factory[T]{
+func New[T any]() Factory[T] {
+	return &ConcreteFactory[T]{
 		shared: singleton.New(func() *T {
 			var t T
 			return &t
@@ -23,11 +23,11 @@ func New[T any]() GenericFactory[T] {
 	}
 }
 
-func (f *Factory[T]) Create() T {
+func (f *ConcreteFactory[T]) Create() T {
 	var t T
 	return t
 }
 
-func (f *Factory[T]) GetShared() *T {
+func (f *ConcreteFactory[T]) GetShared() *T {
 	return f.shared.Get()
 }
