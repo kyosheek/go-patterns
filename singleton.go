@@ -21,6 +21,7 @@ func New[T any](f func() *T) *Singleton[T] {
 func (s *Singleton[T]) Get() *T {
 	s.once.Do(func() {
 		s.value = s.f()
+		s.f = nil
 	},
 	)
 	return s.value
