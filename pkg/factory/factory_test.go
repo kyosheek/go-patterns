@@ -5,7 +5,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"unsafe"
 )
+
+// positive tests
 
 // sample is a non-comparable struct used to make sure the generic
 // implementation also works for user defined types.
@@ -18,7 +21,7 @@ type sample struct {
 // to repeat “0”, “” or “sample{}” everywhere in the tests.
 func zero[T any]() (z T) { return }
 
-func TestFactory_Create(t *testing.T) {
+func TestCreate(t *testing.T) {
 	t.Run("int – zero value", func(t *testing.T) {
 		fac := New[int]()
 		got := fac.Create()
@@ -47,7 +50,7 @@ func TestFactory_Create(t *testing.T) {
 	)
 }
 
-func TestFactory_GetShared(t *testing.T) {
+func TestGetShared(t *testing.T) {
 	t.Run("same int factory returns identical pointer", func(t *testing.T) {
 		fac := New[int]()
 
@@ -131,7 +134,7 @@ func TestFactory_GetShared(t *testing.T) {
 	)
 }
 
-func TestFactory_GetShared_Int_ThreadSafety(t *testing.T) {
+func TestGetSharedIntThreadSafety(t *testing.T) {
 	const goroutines = 100
 
 	fac := New[int]()
@@ -177,7 +180,7 @@ func TestFactory_GetShared_Int_ThreadSafety(t *testing.T) {
 	}
 }
 
-func TestFactory_GetShared_Sample_ThreadSafety(t *testing.T) {
+func TestGetSharedSampleThreadSafety(t *testing.T) {
 	const goroutines = 100
 
 	fac := New[sample]()
@@ -246,4 +249,125 @@ func TestNew(t *testing.T) {
 		}
 	},
 	)
+}
+
+// negative tests
+
+// ptrEqual works around the fact that we cannot compare pointers of
+// different concrete types directly.  We go through unsafe.Pointer which
+// is comparable.
+func ptrEqual(a, b any) bool {
+	return unsafe.Pointer(reflect.ValueOf(a).Pointer()) ==
+		unsafe.Pointer(reflect.ValueOf(b).Pointer())
+}
+
+func TestFactoriesWithDifferentTypesAreIndependent(t *testing.T) {
+	fInt := New[int]()
+	fStr := New[string]()
+	fSlice := New[[]byte]()
+
+	pInt := fInt.GetShared()
+	pStr := fStr.GetShared()
+	pSlc := fSlice.GetShared()
+
+	if ptrEqual(pInt, pStr) || ptrEqual(pInt, pSlc) || ptrEqual(pStr, pSlc) {
+		t.Fatalf("singleton instances leaked across generic types – addresses collide")
+	}
+}
+
+func TestPointerElementTypeBehaviour(t *testing.T) {
+	type pointer = *int
+
+	f := New[pointer]()
+
+	shared := f.GetShared()
+	if shared == nil {
+		t.Fatalf("GetShared() returned <nil> pointer (expected non-nil pointer TO a nil *int)")
+	}
+	if *shared != nil {
+		t.Fatalf("initial **int value is not nil; got %v", *shared)
+	}
+
+	val := new(int)
+	*val = 73
+	*shared = val
+
+	if got := *f.GetShared(); got != val {
+		t.Fatalf("mutation not persisted through singleton: got %v want %v", got, val)
+	}
+}
+
+func TestCreateReturnsProperZeroForOddTypes(t *testing.T) {
+	type oddTestCase[T any] struct {
+		name     string
+		expected T
+	}
+
+	tests := []any{
+		oddTestCase[[]int]{name: "slice", expected: nil},
+		oddTestCase[map[string]int]{name: "map", expected: nil},
+		oddTestCase[func()]{name: "func", expected: nil},
+	}
+
+	for _, raw := range tests {
+		switch tc := raw.(type) {
+		case oddTestCase[[]int]:
+			f := New[[]int]()
+			if got := f.Create(); !reflect.DeepEqual(got, tc.expected) {
+				t.Fatalf("%s zero value mismatch: got %#v, want %#v", tc.name, got, tc.expected)
+			}
+		case oddTestCase[map[string]int]:
+			f := New[map[string]int]()
+			if got := f.Create(); !reflect.DeepEqual(got, tc.expected) {
+				t.Fatalf("%s zero value mismatch: got %#v, want %#v", tc.name, got, tc.expected)
+			}
+		case oddTestCase[func()]:
+			f := New[func()]()
+			if got := f.Create(); !reflect.DeepEqual(got, tc.expected) {
+				t.Fatalf("%s zero value mismatch: got %p, want %p", tc.name, got, tc.expected)
+			}
+		}
+	}
+}
+
+func TestCreateDoesNotAffectSingleton(t *testing.T) {
+	f := New[int]()
+
+	shared := f.GetShared()
+	*shared = 21
+
+	if got := f.Create(); got != 0 {
+		t.Fatalf("Create() leaked singleton value: got %d, want 0", got)
+	}
+	if *shared != 21 {
+		t.Fatalf("singleton value was mutated by Create(): got %d, want 21", *shared)
+	}
+}
+
+func TestConcurrentAccessDifferentTypes(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	fInt := New[int]()
+	fStr := New[string]()
+
+	go func() {
+		defer wg.Done()
+		p := fInt.GetShared()
+		*p = 1984
+		if v := *fInt.GetShared(); v != 1984 {
+			t.Errorf("int factory lost its value under concurrency: got %d", v)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		p := fStr.GetShared()
+		*p = "cypher"
+		if v := *fStr.GetShared(); v != "cypher" {
+			t.Errorf("string factory lost its value under concurrency: got %q", v)
+		}
+	}()
+
+	wg.Wait()
 }

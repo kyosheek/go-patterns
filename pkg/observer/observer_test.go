@@ -32,7 +32,7 @@ func (o *testObserver) lastState() (int, bool) {
 	return o.states[len(o.states)-1], true
 }
 
-func TestNewSubject(t *testing.T) {
+func TestNew(t *testing.T) {
 	t.Parallel()
 
 	got := NewSubject[int]()
@@ -48,7 +48,7 @@ func TestNewSubject(t *testing.T) {
 	}
 }
 
-func TestSubject_Attach(t *testing.T) {
+func TestAttach(t *testing.T) {
 	t.Parallel()
 
 	s := NewSubject[int]()
@@ -63,7 +63,7 @@ func TestSubject_Attach(t *testing.T) {
 	}
 }
 
-func TestSubject_SetState(t *testing.T) {
+func TestSetState(t *testing.T) {
 	t.Parallel()
 
 	s := NewSubject[int]()
@@ -87,7 +87,7 @@ func TestSubject_SetState(t *testing.T) {
 	}
 }
 
-func TestSubject_notifyAll(t *testing.T) {
+func TestNotifyAll(t *testing.T) {
 	t.Parallel()
 
 	s := NewSubject[int]()
@@ -106,7 +106,7 @@ func TestSubject_notifyAll(t *testing.T) {
 	}
 }
 
-func TestSubject_ThreadSafety(t *testing.T) {
+func TestThreadSafety(t *testing.T) {
 	const (
 		subjects      = 32
 		updatesPerSub = 64
@@ -136,4 +136,73 @@ func TestSubject_ThreadSafety(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
+}
+
+// negative tests
+
+func TestAttachNoObservers(t *testing.T) {
+	t.Parallel()
+
+	s := NewSubject[int]()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Attach with no observers panicked: %v", r)
+		}
+	}()
+	s.Attach()
+
+	if len(s.observers) != 0 {
+		t.Fatalf("expected 0 observers, got %d", len(s.observers))
+	}
+}
+
+func TestSetStateNoObservers(t *testing.T) {
+	t.Parallel()
+
+	s := NewSubject[int]()
+	const state = 99
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("SetState with no observers panicked: %v", r)
+		}
+	}()
+	s.SetState(state)
+
+	if s.state != state {
+		t.Fatalf("state = %d, want %d", s.state, state)
+	}
+}
+
+func TestSetStateWithNilObserverShouldPanic(t *testing.T) {
+	t.Parallel()
+
+	s := NewSubject[int]()
+	var nilObs Observer[int]
+	s.Attach(nilObs)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic when notifying a nil observer, got none")
+		}
+	}()
+	s.SetState(1)
+}
+
+func TestNilSubjectMethodsShouldPanic(t *testing.T) {
+	t.Parallel()
+
+	var s *Subject[int] // nil subject
+
+	check := func(name string, f func()) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Fatalf("%s did not panic on nil receiver", name)
+			}
+		}()
+		f()
+	}
+
+	check("Attach", func() { s.Attach() })
+	check("SetState", func() { s.SetState(1) })
+	check("notifyAll", func() { s.notifyAll() })
 }
