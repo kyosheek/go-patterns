@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"kyoshee/singleton"
+	"kyoshee/patterns/pkg/singleton"
 )
 
 type config struct {
