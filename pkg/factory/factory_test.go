@@ -230,12 +230,12 @@ func TestGetSharedSampleThreadSafety(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	t.Run("returned object implements GenericFactory", func(t *testing.T) {
+	t.Run("returned object implements Factory", func(t *testing.T) {
 		fac := New[string]()
 
 		// Compile-time assertion – the following assignment will fail to
-		// compile if fac does not implement GenericFactory[string].
-		var _ GenericFactory[string] = fac
+		// compile if fac does not implement Factory[string].
+		var _ Factory[string] = fac
 	},
 	)
 

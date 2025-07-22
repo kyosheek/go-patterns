@@ -11,7 +11,7 @@ type obs struct {
 }
 
 func (o *obs) Update(state int) {
-	log.Printf("%s is in state %s", o.name, state)
+	log.Printf("%s is in state %d", o.name, state)
 }
 
 func newObserver(name string) observer.Observer[int] {
