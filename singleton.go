@@ -13,6 +13,7 @@ type Singleton[T any] struct {
 func New[T any](f func() *T) *Singleton[T] {
 	return &Singleton[T]{
 		once:  sync.Once{},
+		f:     f,
 		value: nil,
 	}
 }
