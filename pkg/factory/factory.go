@@ -1,7 +1,7 @@
 package factory
 
 import (
-	"kyoshee/patterns/pkg/singleton"
+	"github.com/kyosheek/go-patterns/pkg/singleton"
 )
 
 type Factory[T any] interface {

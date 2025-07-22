@@ -3,7 +3,7 @@ package observer
 import (
 	"log"
 
-	"kyoshee/patterns/pkg/observer"
+	"github.com/kyosheek/go-patterns/pkg/observer"
 )
 
 type obs struct {

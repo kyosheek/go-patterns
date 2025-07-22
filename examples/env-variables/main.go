@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"kyoshee/patterns/pkg/singleton"
+	"github.com/kyosheek/go-patterns/pkg/singleton"
 )
 
 type config struct {
