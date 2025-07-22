@@ -190,17 +190,17 @@ func TestSingleton_ThreadSafety(t *testing.T) {
 	)
 
 	var wg sync.WaitGroup
-	n := 100
-	wg.Add(n)
+	const goroutines = 100
+	wg.Add(goroutines)
 
-	for i := 0; i < n; i++ {
+	for i := 0; i < goroutines; i++ {
 		go func() {
 			defer wg.Done()
 			s.Get()
 		}()
 	}
 
-	// verify if
+	// Verify if singleton was created one time
 	wg.Wait()
 	if counter != 1 {
 		t.Errorf("Singleton initialization called %d times, want 1", counter)
@@ -208,7 +208,7 @@ func TestSingleton_ThreadSafety(t *testing.T) {
 
 	// Verify all goroutines get the same value
 	result := *s.Get()
-	for i := 0; i < n; i++ {
+	for i := 0; i < goroutines; i++ {
 		go func() {
 			if got := *s.Get(); got != result {
 				t.Errorf("Get() returned different values across goroutines")
