@@ -1,6 +1,28 @@
 # Patterns
 
-Is a package that has ready-to-use common reusable patterns.
+Reusable patterns in go.
+
+- [Patterns](#patterns)
+- [About](#about)
+- [Requirements](#requirements)
+- [Installation](#installation)
+
+## About
+
+Collection of reusable patterns in golang.
+
+Package includes, but not limited to:
+
+- [Factory pattern](pkg/factory/factory.go)
+- [Observer pattern](pkg/observer/observer.go)
+- [Singleton pattern](pkg/singleton/singleton.go)
+- [Throttle](pkg/throttle/throttle.go)
+
+For each, there are [examples](/examples) that try to closely mimic real use cases.
+
+## Requirements
+
+`go 1.18+`
 
 ## Installation
 
@@ -8,11 +30,10 @@ Is a package that has ready-to-use common reusable patterns.
 go get github.com/kyosheek/go-patterns
 ```
 
-## Requirements
-`go 1.18+`
-
 ## Implemented patterns
+
 *23.07.25*
+
 - Factory
 - Observer
 - Singleton
