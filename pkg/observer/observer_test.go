@@ -8,11 +8,9 @@ import (
 
 // positive tests
 
-/*
-A helper Observer implementation that stores every state it receives.
-The internal slice is guarded by a mutex so we can safely use it from
-several goroutines when we run the thread-safety test.
-*/
+// testObserver is a helper Observer implementation that stores every state it receives.
+// The internal slice is guarded by a mutex so we can safely use it from
+// several goroutines when we run the thread-safety test.
 type testObserver struct {
 	mu     sync.Mutex
 	states []int
@@ -24,7 +22,9 @@ func (o *testObserver) Update(state int) {
 	o.mu.Unlock()
 }
 
-func (o *testObserver) lastState() (int, bool) {
+func (o *testObserver) lastState(t *testing.T) (int, bool) {
+	t.Helper()
+
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
@@ -81,7 +81,7 @@ func TestSetState(t *testing.T) {
 	}
 
 	// Observer should have been notified exactly once with the same value.
-	if got, ok := o.lastState(); !ok || got != state {
+	if got, ok := o.lastState(t); !ok || got != state {
 		t.Fatalf("observer received %d, want %d", got, state)
 	}
 	if len(o.states) != 1 {
@@ -102,7 +102,7 @@ func TestNotifyAll(t *testing.T) {
 	s.notifyAll()
 
 	for i, o := range []*testObserver{o1, o2} {
-		if got, ok := o.lastState(); !ok || got != state {
+		if got, ok := o.lastState(t); !ok || got != state {
 			t.Fatalf("observer %d received %d, want %d", i+1, got, state)
 		}
 	}

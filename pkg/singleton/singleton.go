@@ -4,19 +4,28 @@ import (
 	"sync"
 )
 
+// Factory is a function that returns pointer to instance of T
+type Factory[T any] func() *T
+
+// Singleton accepts factory f and returns result of single
+// execution of given factory on Get calls.
 type Singleton[T any] struct {
 	mu    sync.Mutex
-	f     func() *T
+	f     Factory[T]
 	value *T
 	ready bool
 }
 
-func New[T any](f func() *T) *Singleton[T] {
+// New creates a Singleton instance with provided Factory function f
+func New[T any](f Factory[T]) *Singleton[T] {
 	return &Singleton[T]{
 		f: f,
 	}
 }
 
+// Get safely retrieves result of single Factory function execution
+// that is shared across consecutive calls. Get calls Factory function
+// if current value is nil.
 func (s *Singleton[T]) Get() *T {
 	s.mu.Lock()
 	if s.ready {

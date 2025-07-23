@@ -21,7 +21,7 @@ type testFloatStruct struct {
 
 func TestNew(t *testing.T) {
 	type args[T any] struct {
-		f func() *T
+		f Factory[T]
 	}
 	type testCase[T any] struct {
 		name string
