@@ -7,11 +7,13 @@ import (
 )
 
 type obs struct {
-	name string
+	name  string
+	state int
 }
 
 func (o *obs) Update(state int) {
-	log.Printf("%s is in state %d", o.name, state)
+	o.state = state
+	log.Printf("%s is in state %d", o.name, o.state)
 }
 
 func newObserver(name string) observer.Observer[int] {
