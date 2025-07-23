@@ -7,25 +7,25 @@ import (
 	"testing"
 )
 
+const test = "test"
+
 // positive tests
 
-// testStringStruct is used for testing struct{v: string}
+// testStringStruct is used for testing struct{v: string}.
 type testStringStruct struct {
 	v string
 }
 
-// testFloatStruct is used for testing struct{v: float64}
+// testFloatStruct is used for testing struct{v: float64}.
 type testFloatStruct struct {
 	v float64
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	type args[T any] struct {
 		f Factory[T]
-	}
-	type testCase[T any] struct {
-		name string
-		args args[T]
 	}
 	tests := []struct {
 		name string
@@ -35,7 +35,7 @@ func TestNew(t *testing.T) {
 			name: "string",
 			args: args[string]{
 				f: func() *string {
-					s := "test"
+					s := test
 					return &s
 				},
 			},
@@ -53,7 +53,7 @@ func TestNew(t *testing.T) {
 			name: "[]testStringStruct",
 			args: args[[]testStringStruct]{
 				f: func() *[]testStringStruct {
-					s := []testStringStruct{{v: "test"}}
+					s := []testStringStruct{{v: test}}
 					return &s
 				},
 			},
@@ -69,7 +69,10 @@ func TestNew(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			switch args := tt.args.(type) {
 			case args[string]:
 				got := New(args.f)
@@ -98,11 +101,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	type testCase[T any] struct {
-		name string
-		s    *Singleton[T]
-		want *T
-	}
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		s    interface{}
@@ -111,12 +111,12 @@ func TestGet(t *testing.T) {
 		{
 			name: "string",
 			s: New(func() *string {
-				s := "test"
+				s := test
 				return &s
 			},
 			),
 			want: func() *string {
-				s := "test"
+				s := test
 				return &s
 			}(),
 		},
@@ -135,12 +135,12 @@ func TestGet(t *testing.T) {
 		{
 			name: "[]testStringStruct",
 			s: New(func() *[]testStringStruct {
-				s := []testStringStruct{{v: "test"}}
+				s := []testStringStruct{{v: test}}
 				return &s
 			},
 			),
 			want: func() *[]testStringStruct {
-				s := []testStringStruct{{v: "test"}}
+				s := []testStringStruct{{v: test}}
 				return &s
 			}(),
 		},
@@ -158,7 +158,10 @@ func TestGet(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			switch s := tt.s.(type) {
 			case *Singleton[string]:
 				if got := s.Get(); !reflect.DeepEqual(got, tt.want.(*string)) {
@@ -183,7 +186,9 @@ func TestGet(t *testing.T) {
 }
 
 func TestThreadSafety(t *testing.T) {
-	var counter int32 = 0
+	t.Parallel()
+
+	var counter int32
 	s := New(func() *int {
 		atomic.AddInt32(&counter, 1)
 		v := 42
@@ -222,6 +227,8 @@ func TestThreadSafety(t *testing.T) {
 // negative tests
 
 func TestGetWithNilFuncPanics(t *testing.T) {
+	t.Parallel()
+
 	s := New[int](nil)
 
 	defer func() {
@@ -235,6 +242,8 @@ func TestGetWithNilFuncPanics(t *testing.T) {
 }
 
 func TestGetWhenFactoryReturnsNil(t *testing.T) {
+	t.Parallel()
+
 	var called int32
 	s := New(func() *int {
 		atomic.AddInt32(&called, 1)
@@ -257,6 +266,8 @@ func TestGetWhenFactoryReturnsNil(t *testing.T) {
 }
 
 func TestFactoryPanics(t *testing.T) {
+	t.Parallel()
+
 	var called int32
 	s := New(func() *int {
 		atomic.AddInt32(&called, 1)

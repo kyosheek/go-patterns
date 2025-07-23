@@ -22,7 +22,11 @@ type sample struct {
 func zero[T any]() (z T) { return }
 
 func TestCreate(t *testing.T) {
+	t.Parallel()
+
 	t.Run("int – zero value", func(t *testing.T) {
+		t.Parallel()
+
 		fac := New[int]()
 		got := fac.Create()
 		if got != 0 {
@@ -32,6 +36,8 @@ func TestCreate(t *testing.T) {
 	)
 
 	t.Run("string – zero value", func(t *testing.T) {
+		t.Parallel()
+
 		fac := New[string]()
 		got := fac.Create()
 		if got != "" {
@@ -41,6 +47,8 @@ func TestCreate(t *testing.T) {
 	)
 
 	t.Run("struct – zero value", func(t *testing.T) {
+		t.Parallel()
+
 		fac := New[sample]()
 		got := fac.Create()
 		if !reflect.DeepEqual(got, zero[sample]()) {
@@ -51,7 +59,11 @@ func TestCreate(t *testing.T) {
 }
 
 func TestGetShared(t *testing.T) {
+	t.Parallel()
+
 	t.Run("same int factory returns identical pointer", func(t *testing.T) {
+		t.Parallel()
+
 		fac := New[int]()
 
 		p1 := fac.GetShared()
@@ -70,6 +82,8 @@ func TestGetShared(t *testing.T) {
 	)
 
 	t.Run("same sample factory returns identical pointer", func(t *testing.T) {
+		t.Parallel()
+
 		fac := New[sample]()
 
 		p1 := fac.GetShared()
@@ -92,6 +106,8 @@ func TestGetShared(t *testing.T) {
 	)
 
 	t.Run("different int factories hold independent singletons", func(t *testing.T) {
+		t.Parallel()
+
 		f1 := New[int]()
 		f2 := New[int]()
 
@@ -112,6 +128,8 @@ func TestGetShared(t *testing.T) {
 	)
 
 	t.Run("different sample factories hold independent singletons", func(t *testing.T) {
+		t.Parallel()
+
 		f1 := New[sample]()
 		f2 := New[sample]()
 
@@ -135,16 +153,18 @@ func TestGetShared(t *testing.T) {
 }
 
 func TestGetSharedIntThreadSafety(t *testing.T) {
+	t.Parallel()
+
 	const goroutines = 100
 
-	fac := New[int]()
+	fac := New[int32]()
 
 	// We let the first goroutine set the value; everyone else must see it.
 	var once sync.Once
 	var expected int32 = 99
 
 	// We also count how many distinct *int pointers we encounter.
-	var uniquePtr atomic.Pointer[int]
+	var uniquePtr atomic.Pointer[int32]
 	var differentAddress int32 // increments if any goroutine observes a different address
 
 	var wg sync.WaitGroup
@@ -164,10 +184,10 @@ func TestGetSharedIntThreadSafety(t *testing.T) {
 			}
 
 			// The first goroutine sets the value.
-			once.Do(func() { *p = int(expected) })
+			once.Do(func() { *p = expected })
 
 			// Everyone should read the same value.
-			if v := *p; int32(v) != expected {
+			if v := *p; v != expected {
 				t.Errorf("observed value %d, want %d", v, expected)
 			}
 		}()
@@ -181,13 +201,15 @@ func TestGetSharedIntThreadSafety(t *testing.T) {
 }
 
 func TestGetSharedSampleThreadSafety(t *testing.T) {
+	t.Parallel()
+
 	const goroutines = 100
 
 	fac := New[sample]()
 
 	// We let the first goroutine set the value; everyone else must see it.
 	var once sync.Once
-	var expected sample = sample{
+	var expected = sample{
 		A: 42,
 		B: "is life",
 	}
@@ -230,7 +252,11 @@ func TestGetSharedSampleThreadSafety(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returned object implements Factory", func(t *testing.T) {
+		t.Parallel()
+
 		fac := New[string]()
 
 		// Compile-time assertion – the following assignment will fail to
@@ -240,6 +266,8 @@ func TestNew(t *testing.T) {
 	)
 
 	t.Run("creates usable factory", func(t *testing.T) {
+		t.Parallel()
+
 		fac := New[string]()
 		if got := fac.Create(); got != "" {
 			t.Fatalf("Create() on fresh factory = %q, want empty string", got)
@@ -256,12 +284,16 @@ func TestNew(t *testing.T) {
 // ptrEqual works around the fact that we cannot compare pointers of
 // different concrete types directly.  We go through unsafe.Pointer which
 // is comparable.
-func ptrEqual(a, b any) bool {
+func ptrEqual(t *testing.T, a, b any) bool {
+	t.Helper()
+
 	return unsafe.Pointer(reflect.ValueOf(a).Pointer()) ==
 		unsafe.Pointer(reflect.ValueOf(b).Pointer())
 }
 
 func TestFactoriesWithDifferentTypesAreIndependent(t *testing.T) {
+	t.Parallel()
+
 	fInt := New[int]()
 	fStr := New[string]()
 	fSlice := New[[]byte]()
@@ -270,12 +302,14 @@ func TestFactoriesWithDifferentTypesAreIndependent(t *testing.T) {
 	pStr := fStr.GetShared()
 	pSlc := fSlice.GetShared()
 
-	if ptrEqual(pInt, pStr) || ptrEqual(pInt, pSlc) || ptrEqual(pStr, pSlc) {
+	if ptrEqual(t, pInt, pStr) || ptrEqual(t, pInt, pSlc) || ptrEqual(t, pStr, pSlc) {
 		t.Fatalf("singleton instances leaked across generic types – addresses collide")
 	}
 }
 
 func TestPointerElementTypeBehaviour(t *testing.T) {
+	t.Parallel()
+
 	type pointer = *int
 
 	f := New[pointer]()
@@ -298,6 +332,8 @@ func TestPointerElementTypeBehaviour(t *testing.T) {
 }
 
 func TestCreateReturnsProperZeroForOddTypes(t *testing.T) {
+	t.Parallel()
+
 	type oddTestCase[T any] struct {
 		name     string
 		expected T
@@ -310,6 +346,7 @@ func TestCreateReturnsProperZeroForOddTypes(t *testing.T) {
 	}
 
 	for _, raw := range tests {
+		raw := raw
 		switch tc := raw.(type) {
 		case oddTestCase[[]int]:
 			f := New[[]int]()
@@ -331,6 +368,8 @@ func TestCreateReturnsProperZeroForOddTypes(t *testing.T) {
 }
 
 func TestCreateDoesNotAffectSingleton(t *testing.T) {
+	t.Parallel()
+
 	f := New[int]()
 
 	shared := f.GetShared()
@@ -345,6 +384,8 @@ func TestCreateDoesNotAffectSingleton(t *testing.T) {
 }
 
 func TestConcurrentAccessDifferentTypes(t *testing.T) {
+	t.Parallel()
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 

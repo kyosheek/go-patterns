@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-// Factory is a function that returns pointer to instance of T
+// Factory is a function that returns pointer to instance of T.
 type Factory[T any] func() *T
 
 // Singleton accepts factory f and returns result of single
@@ -16,7 +16,7 @@ type Singleton[T any] struct {
 	ready bool
 }
 
-// New creates a Singleton instance with provided Factory function f
+// New creates a Singleton instance with provided Factory function f.
 func New[T any](f Factory[T]) *Singleton[T] {
 	return &Singleton[T]{
 		f: f,

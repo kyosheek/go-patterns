@@ -17,7 +17,7 @@ type ConcreteFactory[T any] struct {
 	shared *singleton.Singleton[T]
 }
 
-// New creates ConcreteFactory with generic type T
+// New creates ConcreteFactory with generic type T.
 func New[T any]() Factory[T] {
 	return &ConcreteFactory[T]{
 		shared: singleton.New(func() *T {
@@ -28,13 +28,13 @@ func New[T any]() Factory[T] {
 	}
 }
 
-// Create creates new instance of type T
+// Create creates new instance of type T.
 func (f *ConcreteFactory[T]) Create() T {
 	var t T
 	return t
 }
 
-// GetShared returns shared instance of type T
+// GetShared returns shared instance of type T.
 func (f *ConcreteFactory[T]) GetShared() *T {
 	return f.shared.Get()
 }

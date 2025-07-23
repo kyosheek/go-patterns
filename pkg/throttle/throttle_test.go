@@ -11,6 +11,7 @@ import (
 // avoids endless waits in case of bugs.
 func eventually(t *testing.T, d time.Duration, f func() bool) {
 	t.Helper()
+
 	deadline := time.Now().Add(d)
 	for time.Now().Before(deadline) {
 		if f() {
@@ -22,8 +23,10 @@ func eventually(t *testing.T, d time.Duration, f func() bool) {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	var calls int32
-	fn := func(args ...any) { atomic.AddInt32(&calls, 1) }
+	fn := func(_ ...any) { atomic.AddInt32(&calls, 1) }
 
 	delay := 50 * time.Millisecond
 	throttled := New(fn, delay)
@@ -48,8 +51,10 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewThreadSafety(t *testing.T) {
+	t.Parallel()
+
 	var calls int32
-	fn := func(args ...any) { atomic.AddInt32(&calls, 1) }
+	fn := func(_ ...any) { atomic.AddInt32(&calls, 1) }
 
 	delay := time.Second // long delay to make the window obvious
 	throttled := New(fn, delay)

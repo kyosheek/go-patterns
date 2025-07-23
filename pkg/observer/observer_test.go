@@ -16,7 +16,7 @@ type testObserver struct {
 	states []int
 }
 
-func (o *testObserver) Update(state int) {
+func (o *testObserver) Update(state, _ int) {
 	o.mu.Lock()
 	o.states = append(o.states, state)
 	o.mu.Unlock()
@@ -39,7 +39,6 @@ func TestNew(t *testing.T) {
 
 	got := NewSubject[int]()
 
-	// An empty int value is 0.
 	want := &Subject[int]{
 		observers: make([]Observer[int], 0),
 		state:     0,
@@ -99,7 +98,7 @@ func TestNotifyAll(t *testing.T) {
 
 	const state = 7
 	s.state = state
-	s.notifyAll()
+	s.notifyAll(state)
 
 	for i, o := range []*testObserver{o1, o2} {
 		if got, ok := o.lastState(t); !ok || got != state {
@@ -109,6 +108,8 @@ func TestNotifyAll(t *testing.T) {
 }
 
 func TestThreadSafety(t *testing.T) {
+	t.Parallel()
+
 	const (
 		subjects      = 32
 		updatesPerSub = 64
@@ -206,5 +207,5 @@ func TestNilSubjectMethodsShouldPanic(t *testing.T) {
 
 	check("Attach", func() { s.Attach() })
 	check("SetState", func() { s.SetState(1) })
-	check("notifyAll", func() { s.notifyAll() })
+	check("notifyAll", func() { s.notifyAll(0) })
 }

@@ -1,13 +1,13 @@
 package observer
 
 // Observer interface requires Update function that will run
-// on concrete instance when Subject receives new state
+// on concrete instance when Subject receives new state.
 type Observer[T any] interface {
 	Update(state T, prevState T)
 }
 
 // Subject is a struct that holds multiple Observer instances
-// that need to react on change of given struct state
+// that need to react on change of given struct state.
 type Subject[T any] struct {
 	observers []Observer[T]
 	state     T
@@ -20,9 +20,7 @@ func (s *Subject[T]) Attach(observers ...Observer[T]) {
 		panic("subject is not initialized")
 	}
 
-	for _, observer := range observers {
-		s.observers = append(s.observers, observer)
-	}
+	s.observers = append(s.observers, observers...)
 }
 
 // SetState updates current Subject state and notifies all attached Observer instances.
